@@ -179,6 +179,7 @@ export type Database = {
           id: string
           module: string
           sort_order: number
+          summary: string
           title: string
         }[]
       }
