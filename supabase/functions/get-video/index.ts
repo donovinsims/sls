@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify the user
     const userClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -49,7 +48,6 @@ Deno.serve(async (req) => {
     const email = user.email?.toLowerCase() ?? "";
     const isAdmin = ADMIN_EMAILS.includes(email);
 
-    // Check access
     if (!isAdmin) {
       const { data: customer } = await adminClient
         .from("customers")
@@ -65,7 +63,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get customer ID (or upsert for admins)
     let customerId: string;
     if (isAdmin) {
       const { data: cust } = await adminClient
@@ -83,10 +80,10 @@ Deno.serve(async (req) => {
       customerId = cust!.id;
     }
 
-    // Fetch video (including youtube_id — server-side only)
+    // Fetch video including transcript and summary
     const { data: video, error: videoError } = await adminClient
       .from("videos")
-      .select("id, title, description, youtube_id")
+      .select("id, title, description, youtube_id, transcript, summary")
       .eq("id", videoId)
       .single();
 
@@ -99,7 +96,6 @@ Deno.serve(async (req) => {
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
-    // Invalidate any existing sessions for this customer + video (one active session rule)
     await adminClient
       .from("video_sessions")
       .update({ used: true })
@@ -107,7 +103,6 @@ Deno.serve(async (req) => {
       .eq("video_id", videoId)
       .eq("used", false);
 
-    // Create new session
     const sessionToken = crypto.randomUUID();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 90 * 60 * 1000);
@@ -121,7 +116,6 @@ Deno.serve(async (req) => {
       expires_at: expiresAt.toISOString(),
     });
 
-    // Log activity
     await adminClient.from("activity_log").insert({
       customer_id: customerId,
       video_id: videoId,
@@ -129,7 +123,6 @@ Deno.serve(async (req) => {
       event_type: "watch",
     });
 
-    // Check for suspicious sharing (2+ distinct fingerprints active simultaneously)
     if (fingerprint) {
       const { data: activeSessions } = await adminClient
         .from("video_sessions")
@@ -152,7 +145,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check IP flag threshold (3+ different IPs in 24 hours)
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const { data: recentLogs } = await adminClient
       .from("activity_log")
@@ -171,8 +163,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Return embed URL — the youtube_id is embedded in the URL but only as a YouTube embed
-    // The raw youtube_id string is never returned as a separate field
     const embedUrl = `https://www.youtube.com/embed/${video.youtube_id}?rel=0&modestbranding=1`;
 
     return new Response(
@@ -180,6 +170,8 @@ Deno.serve(async (req) => {
         embedUrl,
         title: video.title,
         description: video.description,
+        transcript: video.transcript,
+        summary: video.summary,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
