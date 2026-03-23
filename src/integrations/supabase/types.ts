@@ -14,13 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_log: {
+        Row: {
+          customer_id: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          video_id: string
+          watched_at: string
+        }
+        Insert: {
+          customer_id: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          video_id: string
+          watched_at?: string
+        }
+        Update: {
+          customer_id?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          video_id?: string
+          watched_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          access_expires_at: string | null
+          course_access: boolean
+          email: string
+          id: string
+          purchased_at: string | null
+          stripe_customer_id: string | null
+        }
+        Insert: {
+          access_expires_at?: string | null
+          course_access?: boolean
+          email: string
+          id?: string
+          purchased_at?: string | null
+          stripe_customer_id?: string | null
+        }
+        Update: {
+          access_expires_at?: string | null
+          course_access?: boolean
+          email?: string
+          id?: string
+          purchased_at?: string | null
+          stripe_customer_id?: string | null
+        }
+        Relationships: []
+      }
+      video_sessions: {
+        Row: {
+          created_at: string
+          customer_id: string
+          device_fingerprint: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          session_token: string
+          used: boolean
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          device_fingerprint?: string | null
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          session_token: string
+          used?: boolean
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          device_fingerprint?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          session_token?: string
+          used?: boolean
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_sessions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_sessions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          description: string
+          id: string
+          module: string
+          sort_order: number
+          title: string
+          youtube_id: string
+        }
+        Insert: {
+          description?: string
+          id?: string
+          module: string
+          sort_order: number
+          title: string
+          youtube_id: string
+        }
+        Update: {
+          description?: string
+          id?: string
+          module?: string
+          sort_order?: number
+          title?: string
+          youtube_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_course_videos: {
+        Args: never
+        Returns: {
+          description: string
+          id: string
+          module: string
+          sort_order: number
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
