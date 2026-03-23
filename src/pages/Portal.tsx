@@ -14,6 +14,7 @@ interface Video {
   description: string;
   sort_order: number;
   module: string;
+  summary: string;
 }
 
 const Portal = () => {

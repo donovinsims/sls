@@ -140,7 +140,9 @@ export type Database = {
           id: string
           module: string
           sort_order: number
+          summary: string
           title: string
+          transcript: string
           youtube_id: string
         }
         Insert: {
@@ -148,7 +150,9 @@ export type Database = {
           id?: string
           module: string
           sort_order: number
+          summary?: string
           title: string
+          transcript?: string
           youtube_id: string
         }
         Update: {
@@ -156,7 +160,9 @@ export type Database = {
           id?: string
           module?: string
           sort_order?: number
+          summary?: string
           title?: string
+          transcript?: string
           youtube_id?: string
         }
         Relationships: []
@@ -173,6 +179,7 @@ export type Database = {
           id: string
           module: string
           sort_order: number
+          summary: string
           title: string
         }[]
       }
