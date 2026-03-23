@@ -1,0 +1,3 @@
+
+ALTER TABLE public.videos ADD COLUMN transcript TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.videos ADD COLUMN summary TEXT NOT NULL DEFAULT '';
