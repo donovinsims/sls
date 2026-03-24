@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
 
@@ -17,6 +19,8 @@ const Watch = () => {
   const [loadingVideo, setLoadingVideo] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,7 +40,7 @@ const Watch = () => {
         if (!isAdmin) {
           const { data: customer } = await supabase
             .from("customers")
-            .select("course_access")
+            .select("id, course_access")
             .eq("email", email)
             .maybeSingle();
 
@@ -45,6 +49,14 @@ const Watch = () => {
             setLoadingVideo(false);
             return;
           }
+          setCustomerId(customer.id);
+        } else {
+          const { data: customer } = await supabase
+            .from("customers")
+            .select("id")
+            .eq("email", email)
+            .maybeSingle();
+          if (customer) setCustomerId(customer.id);
         }
 
         const fp = `${navigator.userAgent}|${screen.width}x${screen.height}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
@@ -69,6 +81,33 @@ const Watch = () => {
         setVideoDescription(data.description ?? "");
         setTranscript(data.transcript ?? "");
         setSummary(data.summary ?? "");
+
+        // Check if already completed & record progress
+        if (customerId || isAdmin) {
+          const cId = customerId;
+          if (cId) {
+            const { data: progress } = await supabase
+              .from("video_progress" as any)
+              .select("completed")
+              .eq("customer_id", cId)
+              .eq("video_id", videoId)
+              .maybeSingle();
+
+            if (progress) {
+              setIsCompleted((progress as any).completed ?? false);
+            }
+
+            // Upsert last_watched_at
+            await supabase.from("video_progress" as any).upsert(
+              {
+                customer_id: cId,
+                video_id: videoId,
+                last_watched_at: new Date().toISOString(),
+              } as any,
+              { onConflict: "customer_id,video_id" }
+            );
+          }
+        }
       } catch (err) {
         console.error(err);
         setError("An unexpected error occurred.");
@@ -79,13 +118,48 @@ const Watch = () => {
     loadVideo();
   }, [user, videoId]);
 
-  // Format transcript into readable paragraphs
+  // Also check progress once customerId resolves (it may resolve after loadVideo in admin case)
+  useEffect(() => {
+    if (!customerId || !videoId) return;
+    const check = async () => {
+      const { data: progress } = await supabase
+        .from("video_progress" as any)
+        .select("completed")
+        .eq("customer_id", customerId)
+        .eq("video_id", videoId)
+        .maybeSingle();
+      if (progress) {
+        setIsCompleted((progress as any).completed ?? false);
+      }
+    };
+    check();
+  }, [customerId, videoId]);
+
+  const handleMarkComplete = async () => {
+    if (!customerId || !videoId) return;
+    const newState = !isCompleted;
+    const { error } = await supabase.from("video_progress" as any).upsert(
+      {
+        customer_id: customerId,
+        video_id: videoId,
+        completed: newState,
+        last_watched_at: new Date().toISOString(),
+      } as any,
+      { onConflict: "customer_id,video_id" }
+    );
+    if (error) {
+      toast.error("Failed to update progress");
+      console.error(error);
+    } else {
+      setIsCompleted(newState);
+      toast.success(newState ? "Lesson marked as complete!" : "Marked as incomplete");
+    }
+  };
+
   const formatTranscript = (text: string) => {
     if (!text) return [];
-    // Split on double newlines or long gaps, create paragraphs from chunks
     const lines = text.split(/\n{2,}/);
     if (lines.length > 1) return lines.filter(l => l.trim());
-    // If no paragraph breaks, chunk by sentences roughly every 3-4 sentences
     const sentences = text.split(/(?<=[.!?])\s+/);
     const paragraphs: string[] = [];
     for (let i = 0; i < sentences.length; i += 4) {
@@ -123,10 +197,29 @@ const Watch = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-4 py-4">
+        <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
           <Link to="/portal" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             ← Back to Dashboard
           </Link>
+          {customerId && (
+            <Button
+              variant={isCompleted ? "outline" : "cta"}
+              size="sm"
+              onClick={handleMarkComplete}
+              className="gap-2"
+            >
+              {isCompleted ? (
+                <>
+                  <svg className="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Completed
+                </>
+              ) : (
+                "Mark as Complete"
+              )}
+            </Button>
+          )}
         </div>
       </header>
 

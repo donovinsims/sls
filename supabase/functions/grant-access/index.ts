@@ -16,8 +16,46 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify caller is admin
+    const body = await req.json();
+    const { action } = body;
+
+    // Register action — no auth required (used by /success page after Stripe payment)
+    if (action === "register") {
+      const { email } = body;
+      if (!email || typeof email !== "string") {
+        return new Response(JSON.stringify({ error: "Missing email" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const trimmed = email.trim().toLowerCase();
+
+      const { error } = await adminClient.from("customers").upsert(
+        {
+          email: trimmed,
+          course_access: false,
+          purchased_at: new Date().toISOString(),
+        },
+        { onConflict: "email" }
+      );
+
+      if (error) {
+        console.error("Register error:", error);
+        return new Response(JSON.stringify({ error: "Failed to register" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // All other actions require admin auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -37,9 +75,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { action, customerId, email } = await req.json();
-
     if (action === "list") {
       const { data: customers, error } = await adminClient
         .from("customers")
@@ -54,6 +89,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "grant") {
+      const { customerId, email } = body;
       if (!customerId || !email) {
         return new Response(JSON.stringify({ error: "Missing customerId or email" }), {
           status: 400,
@@ -61,7 +97,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Grant access
       const { error: updateError } = await adminClient
         .from("customers")
         .update({ course_access: true })
@@ -69,7 +104,6 @@ Deno.serve(async (req) => {
 
       if (updateError) throw updateError;
 
-      // Send magic link
       const baseUrl = req.headers.get("origin") ?? "";
       await adminClient.auth.admin.inviteUserByEmail(email.toLowerCase(), {
         redirectTo: `${baseUrl}/portal`,

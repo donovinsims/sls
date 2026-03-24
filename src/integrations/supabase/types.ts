@@ -83,6 +83,45 @@ export type Database = {
         }
         Relationships: []
       }
+      video_progress: {
+        Row: {
+          completed: boolean
+          customer_id: string
+          id: string
+          last_watched_at: string
+          video_id: string
+        }
+        Insert: {
+          completed?: boolean
+          customer_id: string
+          id?: string
+          last_watched_at?: string
+          video_id: string
+        }
+        Update: {
+          completed?: boolean
+          customer_id?: string
+          id?: string
+          last_watched_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_progress_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_progress_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_sessions: {
         Row: {
           created_at: string
