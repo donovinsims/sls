@@ -17,17 +17,12 @@ const Success = () => {
     setStatus("submitting");
 
     try {
-      const { error } = await supabase.from("customers").upsert(
-        {
-          email: trimmed,
-          course_access: false,
-          purchased_at: new Date().toISOString(),
-        },
-        { onConflict: "email" }
-      );
+      const { data, error } = await supabase.functions.invoke("grant-access", {
+        body: { action: "register", email: trimmed },
+      });
 
-      if (error) {
-        console.error(error);
+      if (error || !data?.success) {
+        console.error(error || data);
         setStatus("error");
         setMessage("Something went wrong. Please contact support with your payment confirmation.");
         return;
@@ -78,8 +73,8 @@ const Success = () => {
           </div>
         ) : status === "done" ? (
           <div className="rounded-lg bg-card p-8 shadow-md border border-border">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--success))]/10">
-              <svg className="h-8 w-8 text-[hsl(var(--success))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+              <svg className="h-8 w-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
