@@ -63,6 +63,19 @@ const Admin = () => {
     setGranting(null);
   };
 
+  const handleReseed = async () => {
+    setReseeding(true);
+    const { data, error } = await supabase.functions.invoke("grant-access", {
+      body: { action: "reseed", videos: VIDEO_BACKUP },
+    });
+    if (error || !data?.success) {
+      toast.error("Failed to re-seed video IDs");
+    } else {
+      toast.success(`Re-seeded ${data.count} videos from backup`);
+    }
+    setReseeding(false);
+  };
+
   if (loading || !isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
