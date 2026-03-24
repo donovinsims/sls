@@ -27,6 +27,7 @@ const App = () => (
             <Route path="/portal" element={<Portal />} />
             <Route path="/watch/:videoId" element={<Watch />} />
             <Route path="/success" element={<Success />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
