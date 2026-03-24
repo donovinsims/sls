@@ -1,0 +1,1 @@
+ALTER TABLE public.videos ADD CONSTRAINT videos_sort_order_unique UNIQUE (sort_order);
