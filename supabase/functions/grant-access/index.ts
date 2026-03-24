@@ -114,6 +114,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "reseed") {
+      const { videos } = body;
+      if (!Array.isArray(videos) || videos.length === 0) {
+        return new Response(JSON.stringify({ error: "Missing videos array" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      for (const v of videos) {
+        const { error: upsertErr } = await adminClient.from("videos").upsert(
+          {
+            title: v.title,
+            module: v.module,
+            youtube_id: v.youtube_id,
+            sort_order: v.sort_order,
+            description: "",
+            transcript: "",
+            summary: "",
+          },
+          { onConflict: "sort_order" }
+        );
+        if (upsertErr) {
+          console.error("Reseed upsert error:", upsertErr);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, count: videos.length }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
