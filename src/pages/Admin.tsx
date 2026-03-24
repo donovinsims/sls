@@ -165,6 +165,23 @@ const Admin = () => {
                 </div>
               )}
             </section>
+
+            {/* Disaster Recovery */}
+            <section className="border-t border-border pt-8">
+              <h2 className="font-display text-2xl font-semibold text-foreground mb-2">
+                Disaster Recovery
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                If video data is missing from the database, click below to restore all 24 video IDs from the hardcoded backup.
+              </p>
+              <Button
+                variant="outline"
+                disabled={reseeding}
+                onClick={handleReseed}
+              >
+                {reseeding ? "Re-seeding..." : "Re-seed Video IDs from Backup"}
+              </Button>
+            </section>
           </>
         )}
       </main>
