@@ -46,13 +46,24 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="SLS Trading Course | Learn Day Trading With a Real Plan"
+        description="Learn day trading with a step-by-step course built for beginners. 25 video lessons, plain-language summaries, searchable transcripts, risk management training. $149 one-time payment."
+        path="/"
+      />
+
       {/* Nav */}
-      <header className="mx-auto max-w-6xl px-4 py-6 flex items-center justify-between">
-        <span className="font-display text-xl font-semibold text-foreground">SLS Trading</span>
-        <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          Sign In
-        </Link>
-      </header>
+      <nav className="mx-auto max-w-6xl px-4 py-6 flex items-center justify-between">
+        <Link to="/" className="font-display text-xl font-semibold text-foreground">SLS Trading</Link>
+        <div className="flex items-center gap-4">
+          <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            About
+          </Link>
+          <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Sign In
+          </Link>
+        </div>
+      </nav>
 
       {/* Hero */}
       <section className="mx-auto max-w-4xl px-4 py-16 md:py-24 text-center space-y-6">
