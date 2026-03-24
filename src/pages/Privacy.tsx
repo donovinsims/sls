@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
+import SEOHead from "@/components/SEOHead";
 
 const Privacy = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead title="Privacy Policy | SLS Trading" description="Privacy Policy for SLS Trading. Learn how we collect, use, and protect your personal information when you use the SLS Trading course." path="/privacy" />
       <header className="mx-auto max-w-3xl px-4 py-6">
         <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
           ← Back to Home
@@ -109,8 +111,15 @@ const Privacy = () => {
         </div>
       </main>
 
-      <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
+      <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground space-y-2">
         <p>© {new Date().getFullYear()} SLS Trading. All rights reserved.</p>
+        <nav className="flex items-center justify-center gap-4">
+          <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+          <span>·</span>
+          <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+          <span>·</span>
+          <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
+        </nav>
       </footer>
     </div>
   );

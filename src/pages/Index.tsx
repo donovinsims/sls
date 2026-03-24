@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import SEOHead from "@/components/SEOHead";
 import {
   Accordion,
   AccordionContent,
@@ -45,13 +46,24 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="SLS Trading Course | Learn Day Trading With a Real Plan"
+        description="Learn day trading with a step-by-step course built for beginners. 25 video lessons, plain-language summaries, searchable transcripts, risk management training. $149 one-time payment."
+        path="/"
+      />
+
       {/* Nav */}
-      <header className="mx-auto max-w-6xl px-4 py-6 flex items-center justify-between">
-        <span className="font-display text-xl font-semibold text-foreground">SLS Trading</span>
-        <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          Sign In
-        </Link>
-      </header>
+      <nav className="mx-auto max-w-6xl px-4 py-6 flex items-center justify-between">
+        <Link to="/" className="font-display text-xl font-semibold text-foreground">SLS Trading</Link>
+        <div className="flex items-center gap-4">
+          <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            About
+          </Link>
+          <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Sign In
+          </Link>
+        </div>
+      </nav>
 
       {/* Hero */}
       <section className="mx-auto max-w-4xl px-4 py-16 md:py-24 text-center space-y-6">
@@ -337,12 +349,117 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground space-y-2">
         <p>© {new Date().getFullYear()} SLS Trading. All rights reserved.</p>
-        <div className="flex items-center justify-center gap-4">
+        <nav className="flex items-center justify-center gap-4">
+          <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+          <span>·</span>
           <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
           <span>·</span>
           <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-        </div>
+          <span>·</span>
+          <a href="mailto:sls25trading@gmail.com" className="hover:text-foreground transition-colors">Contact</a>
+        </nav>
       </footer>
+
+      {/* JSON-LD: WebSite */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "SLS Trading",
+            url: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app",
+          }),
+        }}
+      />
+
+      {/* JSON-LD: Course */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Course",
+            name: "SLS Trading Day Trading Course",
+            description: "A structured, step-by-step day trading course with 25 video lessons covering market structure, entries, risk management, and trading psychology. Built for beginners.",
+            provider: {
+              "@type": "Organization",
+              name: "SLS Trading",
+              url: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app",
+            },
+            url: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app",
+            courseMode: "online",
+            offers: {
+              "@type": "Offer",
+              price: "149",
+              priceCurrency: "USD",
+              availability: "https://schema.org/InStock",
+            },
+          }),
+        }}
+      />
+
+      {/* JSON-LD: FAQPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "Will this course make me profitable?",
+                acceptedAnswer: { "@type": "Answer", text: "No course can guarantee profits. What this will give you is a repeatable process — the same frameworks and setups that work in live markets every day. Whether you put in the screen time to master them is up to you." },
+              },
+              {
+                "@type": "Question",
+                name: "I'm a complete beginner. Will I be able to follow along?",
+                acceptedAnswer: { "@type": "Answer", text: "Yes. The course starts from zero — what a candlestick is, how markets move, what support and resistance actually mean. Every lesson builds on the last. And every video includes a plain-language summary written for people who have never placed a trade." },
+              },
+              {
+                "@type": "Question",
+                name: "How much time does this take?",
+                acceptedAnswer: { "@type": "Answer", text: `The full course is ${totalVideos} video lessons. Most students finish in 2-3 weeks at a pace of 2-3 lessons per day. You have lifetime access, so there's no rush.` },
+              },
+              {
+                "@type": "Question",
+                name: "What's your refund policy?",
+                acceptedAnswer: { "@type": "Answer", text: "If you go through the first 10 lessons and feel it's not worth $149, email within 30 days for a full refund. No hoops, no exit survey." },
+              },
+              {
+                "@type": "Question",
+                name: "How is this different from free YouTube content?",
+                acceptedAnswer: { "@type": "Answer", text: "Free content is scattered. This course is one coherent system, taught in order, where each lesson connects to the next." },
+              },
+              {
+                "@type": "Question",
+                name: "Is this a subscription? Are there hidden costs?",
+                acceptedAnswer: { "@type": "Answer", text: `No. One payment of $149. Lifetime access. No monthly fees. No upsells.` },
+              },
+              {
+                "@type": "Question",
+                name: "Does this work for crypto / forex / options?",
+                acceptedAnswer: { "@type": "Answer", text: "The strategies are taught using stock examples, but the core principles — market structure, price action, risk management, psychology — apply to any market." },
+              },
+            ],
+          }),
+        }}
+      />
+
+      {/* JSON-LD: BreadcrumbList */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app/" },
+            ],
+          }),
+        }}
+      />
     </div>
   );
 };

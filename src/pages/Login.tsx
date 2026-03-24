@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -51,6 +52,7 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <SEOHead title="Sign In | SLS Trading" description="Sign in to your SLS Trading course portal. Access your video lessons, progress tracking, and learning materials." path="/login" />
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <p className="font-script text-primary text-xl mb-2">Welcome back</p>
