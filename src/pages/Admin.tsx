@@ -21,6 +21,7 @@ const Admin = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [granting, setGranting] = useState<string | null>(null);
+  const [reseeding, setReseeding] = useState(false);
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
