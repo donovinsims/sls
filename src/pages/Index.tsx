@@ -248,8 +248,8 @@ const Index = () => {
             ))}
           </ul>
           <Button variant="cta" size="lg" className="text-lg px-10 py-6" asChild>
-            <a href={STRIPE_CHECKOUT_URL} target="_blank" rel="noopener noreferrer">
-              Start Learning — $149
+            <a href={getCheckoutUrl()}>
+              {getCtaText()}
             </a>
           </Button>
           <p className="text-xs text-muted-foreground mt-4">
