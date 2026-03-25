@@ -399,7 +399,7 @@ const Index = () => {
             courseMode: "online",
             offers: {
               "@type": "Offer",
-              price: "149",
+              price: String(getActivePrice()),
               priceCurrency: "USD",
               availability: "https://schema.org/InStock",
             },
