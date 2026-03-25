@@ -16,6 +16,26 @@ type Status =
 const SUPPORT_EMAIL = "sls25trading@gmail.com";
 const REDIRECT_DELAY_MS = 1800;
 
+type VerifyPurchaseResponse = {
+  status?: string;
+  email?: string;
+  referenceCode?: string;
+  recoveryMessage?: string;
+  error?: string;
+  success?: boolean;
+};
+
+const parseFunctionPayload = async (response?: Response): Promise<VerifyPurchaseResponse | null> => {
+  const contentType = response?.headers.get("content-type") ?? "";
+  if (!response || !contentType.includes("application/json")) return null;
+
+  try {
+    return (await response.clone().json()) as VerifyPurchaseResponse;
+  } catch {
+    return null;
+  }
+};
+
 const Success = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -38,13 +58,14 @@ const Success = () => {
 
     const verify = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("verify-purchase", {
+        const { data, error, response } = await supabase.functions.invoke<VerifyPurchaseResponse>("verify-purchase", {
           body: { sessionId },
         });
+        const payload = data ?? await parseFunctionPayload(response);
 
         if (cancelled) return;
 
-        if (error) {
+        if (error && !payload) {
           if (retryCount < 2) {
             window.setTimeout(() => setRetryCount((count) => count + 1), 2000);
             return;
@@ -54,44 +75,44 @@ const Success = () => {
           return;
         }
 
-        const responseEmail = typeof data?.email === "string" ? data.email.toLowerCase() : "";
+        const responseEmail = typeof payload?.email === "string" ? payload.email.toLowerCase() : "";
         if (responseEmail) setEmail(responseEmail);
-        if (typeof data?.referenceCode === "string") setReferenceCode(data.referenceCode);
+        if (typeof payload?.referenceCode === "string") setReferenceCode(payload.referenceCode);
 
-        switch (data?.status) {
+        switch (payload?.status) {
           case "fulfilled":
           case "already_processed":
-            setStatus(data.status);
+            setStatus(payload.status);
             return;
           case "processing":
           case "pending":
           case "unpaid":
-            setMessage(data?.recoveryMessage ?? "Payment is confirmed. Your access is still being finalized.");
+            setMessage(payload?.recoveryMessage ?? "Payment is confirmed. Your access is still being finalized.");
             setStatus("processing");
             return;
           case "manual_review":
           case "verified_pending_db":
-            setMessage(data?.recoveryMessage ?? "Your payment was verified, but account setup needs a manual pass.");
+            setMessage(payload?.recoveryMessage ?? "Your payment was verified, but account setup needs a manual pass.");
             setStatus("manual_review");
             return;
           case "invalid_session":
-            setMessage(data?.recoveryMessage ?? "We could not verify this payment session.");
+            setMessage(payload?.recoveryMessage ?? "We could not verify this payment session.");
             setStatus("invalid_session");
             return;
           case "config_error":
-            setMessage(data?.recoveryMessage ?? "Verification is temporarily unavailable.");
+            setMessage(payload?.recoveryMessage ?? "Verification is temporarily unavailable.");
             setStatus("config_error");
             return;
           default:
             break;
         }
 
-        if (data?.success) {
+        if (payload?.success) {
           setStatus("already_processed");
           return;
         }
 
-        setMessage(data?.error || "We couldn't verify your payment right now.");
+        setMessage(payload?.error || "We couldn't verify your payment right now.");
         setStatus("manual_review");
       } catch {
         if (retryCount < 2) {
