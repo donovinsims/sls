@@ -59,27 +59,39 @@ export type Database = {
       customers: {
         Row: {
           access_expires_at: string | null
+          amount_paid: number | null
           course_access: boolean
           email: string
+          fulfillment_status: string
           id: string
+          plan_type: string | null
           purchased_at: string | null
           stripe_customer_id: string | null
+          stripe_session_id: string | null
         }
         Insert: {
           access_expires_at?: string | null
+          amount_paid?: number | null
           course_access?: boolean
           email: string
+          fulfillment_status?: string
           id?: string
+          plan_type?: string | null
           purchased_at?: string | null
           stripe_customer_id?: string | null
+          stripe_session_id?: string | null
         }
         Update: {
           access_expires_at?: string | null
+          amount_paid?: number | null
           course_access?: boolean
           email?: string
+          fulfillment_status?: string
           id?: string
+          plan_type?: string | null
           purchased_at?: string | null
           stripe_customer_id?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: []
       }

@@ -9,8 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-
-const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/8x2dR28179hqbAQbv56J200";
+import { getCheckoutUrl, getCtaText, getPriceNote, getActivePrice, getStrikethroughPrice, isEarlyBird } from "@/lib/pricing";
 
 interface VideoMeta {
   id: string;
@@ -76,12 +75,16 @@ const Index = () => {
         </p>
         <div className="pt-4 space-y-3">
           <Button variant="cta" size="lg" className="text-lg px-10 py-6" asChild>
-            <a href={STRIPE_CHECKOUT_URL} target="_blank" rel="noopener noreferrer">
-              Start Learning — $149
+            <a href={getCheckoutUrl()}>
+              {getCtaText()}
             </a>
           </Button>
           <p className="text-sm text-muted-foreground">
-            <span className="text-destructive font-medium">$149 until April 1</span> — then it's $199. One payment, yours forever.
+            {isEarlyBird() ? (
+              <><span className="text-destructive font-medium">${getActivePrice()} until April 1</span> — then it's $199. One payment, yours forever.</>
+            ) : (
+              <>One payment of ${getActivePrice()}. Yours forever.</>
+            )}
           </p>
         </div>
       </section>
@@ -216,12 +219,17 @@ const Index = () => {
             Full Course Access
           </h2>
           <div className="flex items-baseline justify-center gap-3 mb-2">
-            <span className="text-4xl md:text-5xl font-display font-bold text-foreground">$149</span>
-            <span className="text-xl text-muted-foreground line-through">$199</span>
+            <span className="text-4xl md:text-5xl font-display font-bold text-foreground">${getActivePrice()}</span>
+            {getStrikethroughPrice() && (
+              <span className="text-xl text-muted-foreground line-through">${getStrikethroughPrice()}</span>
+            )}
           </div>
-          <p className="text-sm text-destructive font-medium mb-6">
-            Price goes to $199 on April 1. No exceptions.
-          </p>
+          {isEarlyBird() && (
+            <p className="text-sm text-destructive font-medium mb-6">
+              Price goes to $199 on April 1. No exceptions.
+            </p>
+          )}
+          {!isEarlyBird() && <div className="mb-6" />}
           <ul className="text-left max-w-sm mx-auto space-y-3 mb-8">
             {[
               `${totalVideos} video lessons — watch at your own pace`,
@@ -240,8 +248,8 @@ const Index = () => {
             ))}
           </ul>
           <Button variant="cta" size="lg" className="text-lg px-10 py-6" asChild>
-            <a href={STRIPE_CHECKOUT_URL} target="_blank" rel="noopener noreferrer">
-              Start Learning — $149
+            <a href={getCheckoutUrl()}>
+              {getCtaText()}
             </a>
           </Button>
           <p className="text-xs text-muted-foreground mt-4">
@@ -304,7 +312,7 @@ const Index = () => {
               How do I access the course after purchase?
             </AccordionTrigger>
             <AccordionContent className="text-muted-foreground leading-relaxed">
-              After payment, you'll enter your email on the confirmation page. We'll send you a magic login link — click it and you're in. No password to remember. Your portal shows every lesson organized by module, tracks your progress, and lets you pick up right where you left off.
+              After payment, you'll be redirected back to our site where we automatically verify your purchase and set up your account. We'll send you a magic login link — click it and you're in. No password to remember. Your portal shows every lesson organized by module, tracks your progress, and lets you pick up right where you left off.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="subscription">
@@ -312,7 +320,7 @@ const Index = () => {
               Is this a subscription? Are there hidden costs?
             </AccordionTrigger>
             <AccordionContent className="text-muted-foreground leading-relaxed">
-              No. It's one payment of $149 (or $199 after April 1). You get lifetime access to everything. No monthly fees. No "premium tier" upsell. No locked modules. Everything is included from day one.
+              No. It's one payment of ${getActivePrice()}. You get lifetime access to everything. No monthly fees. No "premium tier" upsell. No locked modules. Everything is included from day one.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="crypto">
@@ -336,8 +344,8 @@ const Index = () => {
         </p>
         <div className="space-y-3">
           <Button variant="cta" size="lg" className="text-lg px-10 py-6" asChild>
-            <a href={STRIPE_CHECKOUT_URL} target="_blank" rel="noopener noreferrer">
-              Start Learning — $149
+            <a href={getCheckoutUrl()}>
+              {getCtaText()}
             </a>
           </Button>
           <p className="text-xs text-muted-foreground">
@@ -391,7 +399,7 @@ const Index = () => {
             courseMode: "online",
             offers: {
               "@type": "Offer",
-              price: "149",
+              price: String(getActivePrice()),
               priceCurrency: "USD",
               availability: "https://schema.org/InStock",
             },
