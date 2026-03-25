@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Portal from "./pages/Portal";
 import Watch from "./pages/Watch";
 import Success from "./pages/Success";
+import Cancel from "./pages/Cancel";
 import Admin from "./pages/Admin";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
