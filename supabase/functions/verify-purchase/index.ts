@@ -6,6 +6,91 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const BASE_URL = "https://slscourse.lovable.app";
+
+async function sendResendEmail(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = Deno.env.get("RESEND_API");
+  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "noreply@mail.sheaslegacyscalping.com";
+
+  if (!apiKey) {
+    console.error("RESEND_API not configured — skipping email");
+    return { ok: false, error: "RESEND_API not configured" };
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to: [to], subject, html }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Resend error:", res.status, errText);
+      return { ok: false, error: `Resend ${res.status}: ${errText}` };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    console.error("Resend fetch error:", err);
+    return { ok: false, error: String(err) };
+  }
+}
+
+function buyerConfirmationHtml(email: string, planType: string): string {
+  const planLabel = planType === "early_bird" ? "Early Bird ($149)" : "Regular ($199)";
+  return `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;background:#ffffff;color:#1a1a1a;max-width:560px;margin:0 auto;padding:40px 20px;">
+  <h1 style="font-size:24px;margin-bottom:8px;">You're in! 🎉</h1>
+  <p style="font-size:16px;line-height:1.6;color:#555;">
+    Your purchase of the <strong>SLS Trading Course</strong> (${planLabel}) is confirmed.
+    Your course access is now live.
+  </p>
+  <p style="font-size:16px;line-height:1.6;color:#555;">
+    We've sent a separate magic login link to <strong>${email}</strong>.
+    Click it to sign in and start learning — no password needed.
+  </p>
+  <a href="${BASE_URL}/login" style="display:inline-block;background:#c8a962;color:#fff;text-decoration:none;padding:14px 28px;border-radius:6px;font-weight:600;font-size:16px;margin:16px 0;">
+    Go to Login
+  </a>
+  <p style="font-size:14px;color:#888;margin-top:24px;">
+    If you don't see the login link email, check your spam folder or request a new one from the login page.
+  </p>
+  <p style="font-size:13px;color:#aaa;margin-top:32px;">
+    Questions? Reply to this email or contact <a href="mailto:sls25trading@gmail.com" style="color:#c8a962;">sls25trading@gmail.com</a>
+  </p>
+</body></html>`;
+}
+
+function adminNotificationHtml(email: string, planType: string, amount: number): string {
+  const planLabel = planType === "early_bird" ? "Early Bird" : "Regular";
+  const dollars = (amount / 100).toFixed(2);
+  return `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;background:#ffffff;color:#1a1a1a;max-width:560px;margin:0 auto;padding:40px 20px;">
+  <h1 style="font-size:22px;margin-bottom:8px;">New Course Purchase 💰</h1>
+  <table style="font-size:15px;line-height:1.8;color:#555;">
+    <tr><td style="padding-right:16px;font-weight:600;">Customer</td><td>${email}</td></tr>
+    <tr><td style="padding-right:16px;font-weight:600;">Plan</td><td>${planLabel}</td></tr>
+    <tr><td style="padding-right:16px;font-weight:600;">Amount</td><td>$${dollars}</td></tr>
+    <tr><td style="padding-right:16px;font-weight:600;">Time</td><td>${new Date().toISOString()}</td></tr>
+  </table>
+  <a href="${BASE_URL}/admin" style="display:inline-block;background:#c8a962;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:600;font-size:14px;margin:20px 0;">
+    View Admin Dashboard
+  </a>
+</body></html>`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,7 +125,7 @@ Deno.serve(async (req) => {
     // Idempotency check — already fulfilled this session?
     const { data: existing } = await adminClient
       .from("customers")
-      .select("id, email, course_access, fulfillment_status")
+      .select("id, email, course_access, fulfillment_status, confirmation_email_sent_at, admin_notified_at")
       .eq("stripe_session_id", sessionId)
       .maybeSingle();
 
@@ -120,7 +205,6 @@ Deno.serve(async (req) => {
 
     if (upsertError) {
       console.error("Fulfillment upsert error:", upsertError);
-      // Even if DB write fails, we verified payment — don't lose the customer
       return new Response(
         JSON.stringify({
           success: true,
@@ -132,15 +216,59 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Send magic link so they can log in immediately
-    const baseUrl = Deno.env.get("BASE_URL") ?? req.headers.get("origin") ?? "";
+    // Send magic link so they can log in immediately (Supabase auth handles this email)
     try {
       await adminClient.auth.admin.inviteUserByEmail(customerEmail, {
-        redirectTo: `${baseUrl}/portal`,
+        redirectTo: `${BASE_URL}/portal`,
       });
     } catch (emailErr) {
-      // Access is granted even if email fails — log it
       console.error("Magic link email failed:", emailErr);
+    }
+
+    // --- Resend transactional emails (idempotent: only send if not already sent) ---
+    // Re-fetch the customer to get current email tracking state
+    const { data: customer } = await adminClient
+      .from("customers")
+      .select("id, confirmation_email_sent_at, admin_notified_at")
+      .eq("email", customerEmail)
+      .maybeSingle();
+
+    // Buyer confirmation email
+    if (customer && !customer.confirmation_email_sent_at) {
+      const result = await sendResendEmail(
+        customerEmail,
+        "Your SLS Trading Course Access is Live! 🎉",
+        buyerConfirmationHtml(customerEmail, planType),
+      );
+      if (result.ok) {
+        await adminClient
+          .from("customers")
+          .update({ confirmation_email_sent_at: new Date().toISOString(), last_email_error: null })
+          .eq("id", customer.id);
+      } else {
+        await adminClient
+          .from("customers")
+          .update({ last_email_error: result.error ?? "Unknown error" })
+          .eq("id", customer.id);
+      }
+    }
+
+    // Admin notification email
+    const adminEmail = Deno.env.get("RESEND_ADMIN_EMAIL") ?? "donovinsims@gmail.com";
+    if (customer && !customer.admin_notified_at) {
+      const result = await sendResendEmail(
+        adminEmail,
+        `New Purchase: ${customerEmail} — SLS Trading`,
+        adminNotificationHtml(customerEmail, planType, amountPaid),
+      );
+      if (result.ok) {
+        await adminClient
+          .from("customers")
+          .update({ admin_notified_at: new Date().toISOString() })
+          .eq("id", customer.id);
+      } else {
+        console.error("Admin notification failed:", result.error);
+      }
     }
 
     return new Response(

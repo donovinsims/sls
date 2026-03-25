@@ -376,7 +376,7 @@ const Index = () => {
             "@context": "https://schema.org",
             "@type": "WebSite",
             name: "SLS Trading",
-            url: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app",
+            url: "https://slscourse.lovable.app",
           }),
         }}
       />
@@ -393,9 +393,9 @@ const Index = () => {
             provider: {
               "@type": "Organization",
               name: "SLS Trading",
-              url: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app",
+              url: "https://slscourse.lovable.app",
             },
-            url: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app",
+            url: "https://slscourse.lovable.app",
             courseMode: "online",
             offers: {
               "@type": "Offer",
@@ -463,7 +463,7 @@ const Index = () => {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app/" },
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://slscourse.lovable.app/" },
             ],
           }),
         }}
