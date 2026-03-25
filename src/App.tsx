@@ -31,6 +31,7 @@ const App = () => (
             <Route path="/portal" element={<Portal />} />
             <Route path="/watch/:videoId" element={<Watch />} />
             <Route path="/success" element={<Success />} />
+            <Route path="/cancel" element={<Cancel />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
