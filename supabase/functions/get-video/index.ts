@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { FALLBACK_VIDEO_CONTENT_BY_SORT_ORDER } from "../_shared/fallbackVideoContent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,6 +7,10 @@ const corsHeaders = {
 };
 
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
+
+const logTelemetryFailure = (step: string, error: unknown) => {
+  console.error(`get-video telemetry failed during ${step}:`, error);
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
     // Fetch video including transcript and summary
     const { data: video, error: videoError } = await adminClient
       .from("videos")
-      .select("id, title, description, youtube_id, transcript, summary")
+      .select("id, title, description, youtube_id, transcript, summary, sort_order")
       .eq("id", videoId)
       .single();
 
@@ -95,74 +100,107 @@ Deno.serve(async (req) => {
     }
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-
-    await adminClient
-      .from("video_sessions")
-      .update({ used: true })
-      .eq("customer_id", customerId)
-      .eq("video_id", videoId)
-      .eq("used", false);
-
-    const sessionToken = crypto.randomUUID();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 90 * 60 * 1000);
 
-    await adminClient.from("video_sessions").insert({
-      customer_id: customerId,
-      video_id: videoId,
-      session_token: sessionToken,
-      ip_address: ip,
-      device_fingerprint: fingerprint ?? null,
-      expires_at: expiresAt.toISOString(),
-    });
-
-    await adminClient.from("activity_log").insert({
-      customer_id: customerId,
-      video_id: videoId,
-      ip_address: ip,
-      event_type: "watch",
-    });
-
-    if (fingerprint) {
-      const { data: activeSessions } = await adminClient
+    try {
+      const { error: closeSessionsError } = await adminClient
         .from("video_sessions")
-        .select("device_fingerprint")
+        .update({ used: true })
         .eq("customer_id", customerId)
-        .eq("used", false)
-        .gt("expires_at", now.toISOString());
+        .eq("video_id", videoId)
+        .eq("used", false);
 
-      const distinctFingerprints = new Set(
-        (activeSessions ?? []).map((s) => s.device_fingerprint).filter(Boolean)
-      );
-
-      if (distinctFingerprints.size >= 2) {
-        await adminClient.from("activity_log").insert({
-          customer_id: customerId,
-          video_id: videoId,
-          ip_address: ip,
-          event_type: "suspicious_sharing",
-        });
+      if (closeSessionsError) {
+        logTelemetryFailure("closing prior sessions", closeSessionsError);
       }
-    }
 
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const { data: recentLogs } = await adminClient
-      .from("activity_log")
-      .select("ip_address")
-      .eq("customer_id", customerId)
-      .eq("event_type", "watch")
-      .gte("watched_at", twentyFourHoursAgo.toISOString());
+      const { error: createSessionError } = await adminClient.from("video_sessions").insert({
+        customer_id: customerId,
+        video_id: videoId,
+        session_token: crypto.randomUUID(),
+        ip_address: ip,
+        device_fingerprint: fingerprint ?? null,
+        expires_at: expiresAt.toISOString(),
+      });
 
-    const distinctIPs = new Set((recentLogs ?? []).map((l) => l.ip_address).filter(Boolean));
-    if (distinctIPs.size >= 3) {
-      await adminClient.from("activity_log").insert({
+      if (createSessionError) {
+        logTelemetryFailure("creating session", createSessionError);
+      }
+
+      const { error: watchLogError } = await adminClient.from("activity_log").insert({
         customer_id: customerId,
         video_id: videoId,
         ip_address: ip,
-        event_type: "ip_flag",
+        event_type: "watch",
       });
+
+      if (watchLogError) {
+        logTelemetryFailure("recording watch event", watchLogError);
+      }
+
+      if (fingerprint) {
+        const { data: activeSessions, error: activeSessionsError } = await adminClient
+          .from("video_sessions")
+          .select("device_fingerprint")
+          .eq("customer_id", customerId)
+          .eq("used", false)
+          .gt("expires_at", now.toISOString());
+
+        if (activeSessionsError) {
+          logTelemetryFailure("loading active sessions", activeSessionsError);
+        } else {
+          const distinctFingerprints = new Set(
+            (activeSessions ?? []).map((s) => s.device_fingerprint).filter(Boolean)
+          );
+
+          if (distinctFingerprints.size >= 2) {
+            const { error: sharingFlagError } = await adminClient.from("activity_log").insert({
+              customer_id: customerId,
+              video_id: videoId,
+              ip_address: ip,
+              event_type: "suspicious_sharing",
+            });
+
+            if (sharingFlagError) {
+              logTelemetryFailure("recording suspicious sharing", sharingFlagError);
+            }
+          }
+        }
+      }
+
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const { data: recentLogs, error: recentLogsError } = await adminClient
+        .from("activity_log")
+        .select("ip_address")
+        .eq("customer_id", customerId)
+        .eq("event_type", "watch")
+        .gte("watched_at", twentyFourHoursAgo.toISOString());
+
+      if (recentLogsError) {
+        logTelemetryFailure("loading recent logs", recentLogsError);
+      } else {
+        const distinctIPs = new Set((recentLogs ?? []).map((l) => l.ip_address).filter(Boolean));
+        if (distinctIPs.size >= 3) {
+          const { error: ipFlagError } = await adminClient.from("activity_log").insert({
+            customer_id: customerId,
+            video_id: videoId,
+            ip_address: ip,
+            event_type: "ip_flag",
+          });
+
+          if (ipFlagError) {
+            logTelemetryFailure("recording ip flag", ipFlagError);
+          }
+        }
+      }
+    } catch (telemetryError) {
+      logTelemetryFailure("unexpected telemetry block", telemetryError);
     }
 
+    const fallbackContent = FALLBACK_VIDEO_CONTENT_BY_SORT_ORDER[video.sort_order as keyof typeof FALLBACK_VIDEO_CONTENT_BY_SORT_ORDER];
+    const transcript = video.transcript?.trim() || fallbackContent?.transcript || "";
+    const summary = video.summary?.trim() || fallbackContent?.summary || "";
     const embedUrl = `https://www.youtube.com/embed/${video.youtube_id}?rel=0&modestbranding=1`;
 
     return new Response(
@@ -170,8 +208,8 @@ Deno.serve(async (req) => {
         embedUrl,
         title: video.title,
         description: video.description,
-        transcript: video.transcript,
-        summary: video.summary,
+        transcript,
+        summary,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

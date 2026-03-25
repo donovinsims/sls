@@ -10,6 +10,43 @@ const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
 const SUPPORT_EMAIL = "sls25trading@gmail.com";
 
 type VideoProgressRow = Database["public"]["Tables"]["video_progress"]["Row"];
+type GetVideoResponse = {
+  embedUrl?: string;
+  title?: string;
+  description?: string;
+  transcript?: string;
+  summary?: string;
+  error?: string;
+};
+
+const parseFunctionPayload = async (response?: Response): Promise<GetVideoResponse | null> => {
+  const contentType = response?.headers.get("content-type") ?? "";
+  if (!response || !contentType.includes("application/json")) return null;
+
+  try {
+    return (await response.clone().json()) as GetVideoResponse;
+  } catch {
+    return null;
+  }
+};
+
+const getWatchErrorMessage = (payload: GetVideoResponse | null, status?: number) => {
+  const backendError = payload?.error?.toLowerCase() ?? "";
+
+  if (status === 401 || backendError.includes("unauthorized")) {
+    return "Your session expired. Please sign in again.";
+  }
+
+  if (status === 403 || backendError.includes("no course access")) {
+    return "No active purchase found.";
+  }
+
+  if (status === 404 || backendError.includes("video not found")) {
+    return "This lesson could not be found.";
+  }
+
+  return "Playback is temporarily unavailable. Please try again.";
+};
 
 const Watch = () => {
   const { videoId } = useParams<{ videoId: string }>();
@@ -74,22 +111,23 @@ const Watch = () => {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const fingerprint = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-        const { data, error: fnError } = await supabase.functions.invoke("get-video", {
+        const { data, error: fnError, response } = await supabase.functions.invoke<GetVideoResponse>("get-video", {
           body: { videoId, fingerprint },
         });
+        const payload = data ?? await parseFunctionPayload(response);
 
-        if (fnError || !data?.embedUrl) {
-          setError("Failed to load video. Please try again.");
-          console.error(fnError || data);
+        if (fnError || !payload?.embedUrl) {
+          setError(getWatchErrorMessage(payload, response?.status));
+          console.error(fnError || payload);
           setLoadingVideo(false);
           return;
         }
 
-        setEmbedUrl(data.embedUrl);
-        setVideoTitle(data.title ?? "");
-        setVideoDescription(data.description ?? "");
-        setTranscript(data.transcript ?? "");
-        setSummary(data.summary ?? "");
+        setEmbedUrl(payload.embedUrl);
+        setVideoTitle(payload.title ?? "");
+        setVideoDescription(payload.description ?? "");
+        setTranscript(payload.transcript ?? "");
+        setSummary(payload.summary ?? "");
 
         // Check if already completed & record progress
         if (resolvedCustomerId) {
@@ -242,7 +280,7 @@ const Watch = () => {
 
       <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
         {/* Video Player */}
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-lg bg-foreground/5">
+        <div className="relative w-full aspect-video overflow-hidden rounded-[28px] border border-border/70 bg-foreground/5 shadow-[0_24px_70px_rgba(15,10,5,0.10)]">
           {embedUrl && (
             <iframe
               src={embedUrl}
@@ -255,51 +293,56 @@ const Watch = () => {
         </div>
 
         {/* Title & Summary */}
-        <div className="space-y-4">
-          <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground">
-            {videoTitle}
-          </h1>
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-foreground">
+              {videoTitle}
+            </h1>
+            {videoDescription && (
+              <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
+                {videoDescription}
+              </p>
+            )}
+          </div>
 
           {summary && (
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 sm:p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-primary text-lg">📝</span>
-                <h2 className="font-display text-sm font-semibold text-primary uppercase tracking-wide">
-                  Quick Summary
-                </h2>
-              </div>
-              <p className="text-foreground/80 leading-relaxed text-sm sm:text-base">
+            <section className="rounded-[22px] border border-primary/15 bg-card px-5 py-5 shadow-sm sm:px-6 sm:py-6">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary/75">
+                Quick Summary
+              </p>
+              <p className="text-sm leading-8 text-foreground/85 sm:text-base">
                 {summary}
               </p>
-            </div>
+            </section>
           )}
         </div>
 
         {/* Transcript Section */}
         {transcript && (
-          <div className="space-y-3">
+          <section className="space-y-4">
             <button
               onClick={() => setShowTranscript(!showTranscript)}
-              className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:text-foreground"
             >
-              <span className={`transition-transform duration-200 ${showTranscript ? "rotate-90" : ""}`}>
+              <span
+                aria-hidden="true"
+                className={`text-xs transition-transform duration-200 ${showTranscript ? "rotate-90" : ""}`}
+              >
                 ▶
               </span>
-              <span className="uppercase tracking-wide">
-                {showTranscript ? "Hide Transcript" : "Show Transcript"}
-              </span>
+              <span>{showTranscript ? "Hide Transcript" : "Show Transcript"}</span>
             </button>
 
             {showTranscript && (
               <div
                 ref={transcriptRef}
-                className="rounded-lg border border-border bg-card p-4 sm:p-6 max-h-[500px] overflow-y-auto scroll-smooth"
+                className="max-h-[560px] overflow-y-auto rounded-[22px] border border-border bg-card px-5 py-5 shadow-sm scroll-smooth sm:px-6 sm:py-6"
               >
                 <div className="space-y-4">
                   {transcriptParagraphs.map((paragraph, i) => (
                     <p
                       key={i}
-                      className="text-sm text-muted-foreground leading-relaxed"
+                      className="text-sm leading-8 text-muted-foreground sm:text-[15px]"
                     >
                       {paragraph}
                     </p>
@@ -307,7 +350,7 @@ const Watch = () => {
                 </div>
               </div>
             )}
-          </div>
+          </section>
         )}
       </main>
     </div>
