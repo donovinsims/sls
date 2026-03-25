@@ -28,5 +28,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap — update domain when custom domain is connected
-Sitemap: https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app/sitemap.xml
+Sitemap: https://sls-course3.lovable.app/sitemap.xml
