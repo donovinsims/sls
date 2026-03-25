@@ -7,6 +7,9 @@ const corsHeaders = {
 };
 
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
+const SUPABASE_PUBLISHABLE_KEY =
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+  "sb_publishable_iCEc7SfJu9uWX6p9n6Gmbg_cuQ2V-BI";
 
 const logTelemetryFailure = (step: string, error: unknown) => {
   console.error(`get-video telemetry failed during ${step}:`, error);
@@ -28,13 +31,15 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const userClient = createClient(supabaseUrl, supabaseAnon, {
-      global: { headers: { Authorization: authHeader } },
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: authHeader,
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+      },
     });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) {
+    const authPayload = authResponse.ok ? await authResponse.json() : null;
+    const user = authPayload && typeof authPayload === "object" && "email" in authPayload ? authPayload : null;
+    if (!authResponse.ok || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
     if (isAdmin) {
       const { data: cust } = await adminClient
         .from("customers")
-        .upsert({ email, course_access: true }, { onConflict: "email" })
+        .upsert({ email, course_access: true, user_id: user.id }, { onConflict: "email" })
         .select("id")
         .single();
       customerId = cust!.id;

@@ -10,6 +10,9 @@ const SUPPORT_EMAIL = Deno.env.get("RESEND_ADMIN_EMAIL") ?? "donovinsims@gmail.c
 const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") ?? "noreply@mail.sheaslegacyscalping.com";
 const COURSE_KEY = "sls-vault";
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
+const SUPABASE_PUBLISHABLE_KEY =
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+  "sb_publishable_iCEc7SfJu9uWX6p9n6Gmbg_cuQ2V-BI";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -89,22 +92,22 @@ function accessEmailHtml(email: string, link: string, label: string) {
 </body></html>`;
 }
 
-async function authGuard(req: Request, supabaseUrl: string, supabaseAnonKey: string) {
+async function authGuard(req: Request, supabaseUrl: string, supabasePublishableKey: string) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return { user: null, error: "Unauthorized" };
   }
 
-  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
+  const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      Authorization: authHeader,
+      apikey: supabasePublishableKey,
+    },
   });
+  const authPayload = authResponse.ok ? await authResponse.json() : null;
+  const user = authPayload && typeof authPayload === "object" && "email" in authPayload ? authPayload : null;
 
-  const {
-    data: { user },
-    error,
-  } = await userClient.auth.getUser();
-
-  if (error || !user?.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+  if (!authResponse.ok || !user?.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) {
     return { user: null, error: "Forbidden" };
   }
 
@@ -119,9 +122,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-
-    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       return jsonResponse({ error: "Supabase credentials are missing" }, 500);
     }
 
@@ -152,7 +153,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true });
     }
 
-    const auth = await authGuard(req, supabaseUrl, supabaseAnonKey);
+    const auth = await authGuard(req, supabaseUrl, SUPABASE_PUBLISHABLE_KEY);
     if (auth.error) {
       return jsonResponse({ error: auth.error }, auth.error === "Unauthorized" ? 401 : 403);
     }
