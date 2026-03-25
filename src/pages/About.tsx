@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 import SEOHead from "@/components/SEOHead";
+import { getActivePrice } from "@/lib/pricing";
+
+const SITE_URL = import.meta.env.VITE_SITE_URL ?? "https://www.sheaslegacyscalping.com";
 
 /**
  * Static, crawlable AI/LLM summary page.
@@ -84,7 +87,7 @@ const About = () => {
         <section className="space-y-4 text-muted-foreground leading-relaxed">
           <h2 className="font-display text-2xl font-semibold text-foreground">Pricing</h2>
           <p>
-            The course is available for a one-time payment of $149 (limited-time introductory price). The price increases to $199 on April 1, 2026. There are no subscriptions, monthly fees, or hidden upsells.
+            The course is available for a one-time payment of ${getActivePrice()} right now. There are no subscriptions, monthly fees, or hidden upsells.
           </p>
           <p>
             A 30-day money-back guarantee is included. If you're not satisfied, email for a full refund — no questions asked.
@@ -163,7 +166,7 @@ const About = () => {
             "@context": "https://schema.org",
             "@type": "Organization",
             name: "SLS Trading",
-            url: "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app",
+            url: SITE_URL,
             description: "SLS Trading offers a structured day trading course for beginners with 25 video lessons covering market structure, entries, risk management, and trading psychology.",
             contactPoint: {
               "@type": "ContactPoint",
@@ -203,7 +206,7 @@ const About = () => {
                 name: "What's the refund policy?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "If you go through the first 10 lessons and feel it's not worth $149, email within 30 days for a full refund. No hoops, no exit survey.",
+                  text: `If you go through the first 10 lessons and feel it's not worth $${getActivePrice()}, email within 30 days for a full refund. No hoops, no exit survey.`,
                 },
               },
               {

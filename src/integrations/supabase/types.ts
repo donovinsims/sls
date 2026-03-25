@@ -104,6 +104,134 @@ export type Database = {
         }
         Relationships: []
       }
+      course_access_grants: {
+        Row: {
+          course_key: string
+          created_at: string
+          customer_id: string
+          granted_at: string
+          id: string
+          revoked_at: string | null
+          source_purchase_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          course_key: string
+          created_at?: string
+          customer_id: string
+          granted_at?: string
+          id?: string
+          revoked_at?: string | null
+          source_purchase_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          course_key?: string
+          created_at?: string
+          customer_id?: string
+          granted_at?: string
+          id?: string
+          revoked_at?: string | null
+          source_purchase_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_access_grants_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_access_grants_source_purchase_id_fkey"
+            columns: ["source_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchases: {
+        Row: {
+          admin_notified_at: string | null
+          amount_paid: number | null
+          buyer_access_sent_at: string | null
+          buyer_confirmation_sent_at: string | null
+          course_key: string
+          created_at: string
+          currency: string | null
+          customer_id: string | null
+          email: string
+          fulfillment_status: string
+          id: string
+          last_error: string | null
+          manual_review_reason: string | null
+          payment_status: string
+          processed_at: string | null
+          session_payload: Json
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          stripe_session_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notified_at?: string | null
+          amount_paid?: number | null
+          buyer_access_sent_at?: string | null
+          buyer_confirmation_sent_at?: string | null
+          course_key?: string
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          email: string
+          fulfillment_status?: string
+          id?: string
+          last_error?: string | null
+          manual_review_reason?: string | null
+          payment_status?: string
+          processed_at?: string | null
+          session_payload?: Json
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          stripe_session_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notified_at?: string | null
+          amount_paid?: number | null
+          buyer_access_sent_at?: string | null
+          buyer_confirmation_sent_at?: string | null
+          course_key?: string
+          created_at?: string
+          currency?: string | null
+          customer_id?: string | null
+          email?: string
+          fulfillment_status?: string
+          id?: string
+          last_error?: string | null
+          manual_review_reason?: string | null
+          payment_status?: string
+          processed_at?: string | null
+          session_payload?: Json
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          stripe_session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_progress: {
         Row: {
           completed: boolean

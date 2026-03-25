@@ -4,8 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
+const SUPPORT_EMAIL = "sls25trading@gmail.com";
+
+type VideoProgressRow = Database["public"]["Tables"]["video_progress"]["Row"];
 
 const Watch = () => {
   const { videoId } = useParams<{ videoId: string }>();
@@ -36,6 +40,7 @@ const Watch = () => {
       try {
         const email = user.email?.toLowerCase() ?? "";
         const isAdmin = ADMIN_EMAILS.includes(email);
+        let resolvedCustomerId: string | null = null;
 
         if (!isAdmin) {
           const { data: customer } = await supabase
@@ -49,6 +54,7 @@ const Watch = () => {
             setLoadingVideo(false);
             return;
           }
+          resolvedCustomerId = customer.id;
           setCustomerId(customer.id);
         } else {
           const { data: customer } = await supabase
@@ -56,7 +62,10 @@ const Watch = () => {
             .select("id")
             .eq("email", email)
             .maybeSingle();
-          if (customer) setCustomerId(customer.id);
+          if (customer) {
+            resolvedCustomerId = customer.id;
+            setCustomerId(customer.id);
+          }
         }
 
         const fp = `${navigator.userAgent}|${screen.width}x${screen.height}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
@@ -83,30 +92,26 @@ const Watch = () => {
         setSummary(data.summary ?? "");
 
         // Check if already completed & record progress
-        if (customerId || isAdmin) {
-          const cId = customerId;
-          if (cId) {
-            const { data: progress } = await supabase
-              .from("video_progress" as any)
-              .select("completed")
-              .eq("customer_id", cId)
-              .eq("video_id", videoId)
-              .maybeSingle();
+        if (resolvedCustomerId) {
+          const { data: progress } = await supabase
+            .from("video_progress")
+            .select("completed")
+            .eq("customer_id", resolvedCustomerId)
+            .eq("video_id", videoId)
+            .maybeSingle();
 
-            if (progress) {
-              setIsCompleted((progress as any).completed ?? false);
-            }
-
-            // Upsert last_watched_at
-            await supabase.from("video_progress" as any).upsert(
-              {
-                customer_id: cId,
-                video_id: videoId,
-                last_watched_at: new Date().toISOString(),
-              } as any,
-              { onConflict: "customer_id,video_id" }
-            );
+          if (progress) {
+            setIsCompleted(progress.completed ?? false);
           }
+
+          await supabase.from("video_progress").upsert(
+            {
+              customer_id: resolvedCustomerId,
+              video_id: videoId,
+              last_watched_at: new Date().toISOString(),
+            },
+            { onConflict: "customer_id,video_id" }
+          );
         }
       } catch (err) {
         console.error(err);
@@ -123,13 +128,13 @@ const Watch = () => {
     if (!customerId || !videoId) return;
     const check = async () => {
       const { data: progress } = await supabase
-        .from("video_progress" as any)
+        .from("video_progress")
         .select("completed")
         .eq("customer_id", customerId)
         .eq("video_id", videoId)
         .maybeSingle();
       if (progress) {
-        setIsCompleted((progress as any).completed ?? false);
+        setIsCompleted(progress.completed ?? false);
       }
     };
     check();
@@ -138,13 +143,13 @@ const Watch = () => {
   const handleMarkComplete = async () => {
     if (!customerId || !videoId) return;
     const newState = !isCompleted;
-    const { error } = await supabase.from("video_progress" as any).upsert(
+    const { error } = await supabase.from("video_progress").upsert(
       {
         customer_id: customerId,
         video_id: videoId,
         completed: newState,
         last_watched_at: new Date().toISOString(),
-      } as any,
+      },
       { onConflict: "customer_id,video_id" }
     );
     if (error) {
@@ -180,13 +185,25 @@ const Watch = () => {
   }
 
   if (error) {
+    const recoveryEmail = user?.email ? `/login?email=${encodeURIComponent(user.email)}` : "/login";
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="text-center max-w-md">
-          <h1 className="font-display text-2xl font-semibold text-foreground mb-4">{error}</h1>
-          <Link to="/portal" className="text-primary underline hover:text-primary/80">
-            ← Back to Dashboard
-          </Link>
+        <div className="max-w-md text-center space-y-5 rounded-2xl border border-border bg-card p-8 shadow-md">
+          <h1 className="font-display text-2xl font-semibold text-foreground">{error}</h1>
+          <p className="text-sm text-muted-foreground">
+            If you already purchased, this is usually an email mismatch. Try the email you used at checkout or reach out and we will restore access.
+          </p>
+          <div className="space-y-3">
+            <Button variant="cta" size="lg" className="w-full" asChild>
+              <Link to={recoveryEmail}>Try Another Email</Link>
+            </Button>
+            <Button variant="outline" size="lg" className="w-full" asChild>
+              <a href={`mailto:${SUPPORT_EMAIL}`}>Contact Support</a>
+            </Button>
+            <Link to="/portal" className="inline-block text-sm text-primary underline hover:text-primary/80">
+              ← Back to Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );

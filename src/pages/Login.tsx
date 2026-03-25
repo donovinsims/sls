@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,18 @@ import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const prefilledEmail = searchParams.get("email") ?? "";
+  const [email, setEmail] = useState(prefilledEmail);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const siteUrl = import.meta.env.VITE_SITE_URL ?? "https://www.sheaslegacyscalping.com";
+
+  useEffect(() => {
+    setEmail(prefilledEmail);
+  }, [prefilledEmail]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -28,7 +35,7 @@ const Login = () => {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/portal`,
+        emailRedirectTo: `${siteUrl}/portal`,
       },
     });
 

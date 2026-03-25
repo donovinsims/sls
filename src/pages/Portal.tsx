@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
+const SUPPORT_EMAIL = "sls25trading@gmail.com";
+
+type VideoProgressRow = Database["public"]["Tables"]["video_progress"]["Row"];
 
 interface Video {
   id: string;
@@ -80,22 +84,22 @@ const Portal = () => {
 
       if (customer) {
         const { data: progress } = await supabase
-          .from("video_progress" as any)
+          .from("video_progress")
           .select("video_id, completed, last_watched_at")
           .eq("customer_id", customer.id);
 
-        if (progress && Array.isArray(progress)) {
+        if (progress) {
           const completed = new Set<string>();
           let latestTime = "";
           let latestId: string | null = null;
 
-          for (const p of progress) {
-            if ((p as any).completed) {
-              completed.add((p as any).video_id);
+          for (const p of progress as VideoProgressRow[]) {
+            if (p.completed) {
+              completed.add(p.video_id);
             }
-            if ((p as any).last_watched_at > latestTime) {
-              latestTime = (p as any).last_watched_at;
-              latestId = (p as any).video_id;
+            if (p.last_watched_at > latestTime) {
+              latestTime = p.last_watched_at;
+              latestId = p.video_id;
             }
           }
 
@@ -119,18 +123,24 @@ const Portal = () => {
   }
 
   if (hasAccess === false) {
+    const recoveryEmail = user?.email ? `/login?email=${encodeURIComponent(user.email)}` : "/login";
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="text-center max-w-md">
-          <h1 className="font-display text-3xl font-semibold text-foreground mb-4">
+        <div className="text-center max-w-md space-y-5">
+          <h1 className="font-display text-3xl font-semibold text-foreground">
             No Active Purchase Found
           </h1>
           <p className="text-muted-foreground mb-6">
-            Your account doesn't have an active course subscription. Purchase the course to get access.
+            Your current login does not show an active purchase. If you used a different email at checkout, sign in again with that email or contact support.
           </p>
-          <Button variant="cta" size="lg" asChild>
-            <a href="/">Get Access</a>
-          </Button>
+          <div className="space-y-3">
+            <Button variant="cta" size="lg" className="w-full" asChild>
+              <Link to={recoveryEmail}>Use a Different Email</Link>
+            </Button>
+            <Button variant="outline" size="lg" className="w-full" asChild>
+              <a href={`mailto:${SUPPORT_EMAIL}`}>Contact Support</a>
+            </Button>
+          </div>
         </div>
       </div>
     );

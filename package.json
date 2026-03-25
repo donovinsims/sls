@@ -9,6 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "supabase:auth": "bash ./scripts/configure_supabase_auth.sh",
+    "supabase:release": "bash ./scripts/deploy_supabase_release.sh",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -9,7 +9,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getCheckoutUrl, getCtaText, getPriceNote, getActivePrice, getStrikethroughPrice, isEarlyBird } from "@/lib/pricing";
+import { getCheckoutUrl, getCtaText, getActivePrice, getStrikethroughPrice, isEarlyBird } from "@/lib/pricing";
+
+const SITE_URL = import.meta.env.VITE_SITE_URL ?? "https://www.sheaslegacyscalping.com";
 
 interface VideoMeta {
   id: string;
@@ -376,7 +378,7 @@ const Index = () => {
             "@context": "https://schema.org",
             "@type": "WebSite",
             name: "SLS Trading",
-            url: "https://slscourse.lovable.app",
+            url: SITE_URL,
           }),
         }}
       />
@@ -393,9 +395,9 @@ const Index = () => {
             provider: {
               "@type": "Organization",
               name: "SLS Trading",
-              url: "https://slscourse.lovable.app",
+              url: SITE_URL,
             },
-            url: "https://slscourse.lovable.app",
+            url: SITE_URL,
             courseMode: "online",
             offers: {
               "@type": "Offer",
@@ -433,7 +435,7 @@ const Index = () => {
               {
                 "@type": "Question",
                 name: "What's your refund policy?",
-                acceptedAnswer: { "@type": "Answer", text: "If you go through the first 10 lessons and feel it's not worth $149, email within 30 days for a full refund. No hoops, no exit survey." },
+                acceptedAnswer: { "@type": "Answer", text: `If you go through the first 10 lessons and feel it's not worth $${getActivePrice()}, email within 30 days for a full refund. No hoops, no exit survey.` },
               },
               {
                 "@type": "Question",
@@ -443,7 +445,7 @@ const Index = () => {
               {
                 "@type": "Question",
                 name: "Is this a subscription? Are there hidden costs?",
-                acceptedAnswer: { "@type": "Answer", text: `No. One payment of $149. Lifetime access. No monthly fees. No upsells.` },
+                acceptedAnswer: { "@type": "Answer", text: `No. One payment of $${getActivePrice()}. Lifetime access. No monthly fees. No upsells.` },
               },
               {
                 "@type": "Question",
@@ -463,7 +465,7 @@ const Index = () => {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "https://slscourse.lovable.app/" },
+              { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
             ],
           }),
         }}

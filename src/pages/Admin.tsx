@@ -15,12 +15,29 @@ interface Customer {
   purchased_at: string | null;
 }
 
+interface PurchaseException {
+  id: string;
+  stripe_session_id: string;
+  email: string;
+  course_key: string;
+  fulfillment_status: string;
+  payment_status: string;
+  amount_paid: number | null;
+  currency: string | null;
+  manual_review_reason: string | null;
+  last_error: string | null;
+  processed_at: string | null;
+  created_at: string;
+}
+
 const Admin = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [exceptions, setExceptions] = useState<PurchaseException[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [granting, setGranting] = useState<string | null>(null);
+  const [rerunning, setRerunning] = useState<string | null>(null);
   const [reseeding, setReseeding] = useState(false);
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
@@ -45,6 +62,7 @@ const Admin = () => {
       toast.error("Failed to load customers");
     } else {
       setCustomers(data?.customers ?? []);
+      setExceptions(data?.exceptions ?? []);
     }
     setLoadingData(false);
   };
@@ -61,6 +79,20 @@ const Admin = () => {
       fetchCustomers();
     }
     setGranting(null);
+  };
+
+  const handleRerun = async (purchase: PurchaseException) => {
+    setRerunning(purchase.id);
+    const { data, error } = await supabase.functions.invoke("grant-access", {
+      body: { action: "rerun", purchaseId: purchase.id, sessionId: purchase.stripe_session_id },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error ?? "Failed to rerun fulfillment");
+    } else {
+      toast.success(`Reran ${purchase.email}`);
+      fetchCustomers();
+    }
+    setRerunning(null);
   };
 
   const handleReseed = async () => {
@@ -101,6 +133,43 @@ const Admin = () => {
           <p className="text-muted-foreground text-center">Loading customers...</p>
         ) : (
           <>
+            {/* Exceptions */}
+            <section>
+              <h2 className="font-display text-2xl font-semibold text-foreground mb-4">
+                Exceptions ({exceptions.length})
+              </h2>
+              {exceptions.length === 0 ? (
+                <p className="text-muted-foreground">No fulfillment exceptions.</p>
+              ) : (
+                <div className="space-y-3">
+                  {exceptions.map((purchase) => (
+                    <div
+                      key={purchase.id}
+                      className="flex flex-col gap-4 rounded-lg border border-destructive/20 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">{purchase.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {purchase.fulfillment_status} · {purchase.payment_status} · {purchase.stripe_session_id}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {purchase.manual_review_reason || purchase.last_error || "No error details saved"}
+                        </p>
+                      </div>
+                      <Button
+                        variant="cta"
+                        size="sm"
+                        disabled={rerunning === purchase.id}
+                        onClick={() => handleRerun(purchase)}
+                      >
+                        {rerunning === purchase.id ? "Rerunning..." : "Rerun Fulfillment"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {/* Pending */}
             <section>
               <h2 className="font-display text-2xl font-semibold text-foreground mb-4">
@@ -172,7 +241,7 @@ const Admin = () => {
                 Disaster Recovery
               </h2>
               <p className="text-sm text-muted-foreground mb-4">
-                If video data is missing from the database, click below to restore all 24 video IDs from the hardcoded backup.
+                If video data is missing from the database, click below to restore all 25 video IDs from the hardcoded backup.
               </p>
               <Button
                 variant="outline"

@@ -28,4 +28,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://slscourse.lovable.app/sitemap.xml
+Sitemap: https://www.sheaslegacyscalping.com/sitemap.xml

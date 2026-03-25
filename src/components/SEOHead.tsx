@@ -8,7 +8,7 @@ interface SEOHeadProps {
   noindex?: boolean;
 }
 
-const SITE_URL = "https://slscourse.lovable.app";
+const SITE_URL = import.meta.env.VITE_SITE_URL ?? "https://www.sheaslegacyscalping.com";
 const DEFAULT_OG_IMAGE = "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/5c460bab-a8da-481c-b394-266d3dd8a605";
 
 /**
