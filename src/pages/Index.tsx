@@ -312,7 +312,7 @@ const Index = () => {
               How do I access the course after purchase?
             </AccordionTrigger>
             <AccordionContent className="text-muted-foreground leading-relaxed">
-              After payment, you'll enter your email on the confirmation page. We'll send you a magic login link — click it and you're in. No password to remember. Your portal shows every lesson organized by module, tracks your progress, and lets you pick up right where you left off.
+              After payment, you'll be redirected back to our site where we automatically verify your purchase and set up your account. We'll send you a magic login link — click it and you're in. No password to remember. Your portal shows every lesson organized by module, tracks your progress, and lets you pick up right where you left off.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="subscription">
