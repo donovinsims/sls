@@ -9,8 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-
-const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/8x2dR28179hqbAQbv56J200";
+import { getCheckoutUrl, getCtaText, getPriceNote, getActivePrice, getStrikethroughPrice, isEarlyBird } from "@/lib/pricing";
 
 interface VideoMeta {
   id: string;
