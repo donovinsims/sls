@@ -75,12 +75,16 @@ const Index = () => {
         </p>
         <div className="pt-4 space-y-3">
           <Button variant="cta" size="lg" className="text-lg px-10 py-6" asChild>
-            <a href={STRIPE_CHECKOUT_URL} target="_blank" rel="noopener noreferrer">
-              Start Learning — $149
+            <a href={getCheckoutUrl()}>
+              {getCtaText()}
             </a>
           </Button>
           <p className="text-sm text-muted-foreground">
-            <span className="text-destructive font-medium">$149 until April 1</span> — then it's $199. One payment, yours forever.
+            {isEarlyBird() ? (
+              <><span className="text-destructive font-medium">${getActivePrice()} until April 1</span> — then it's $199. One payment, yours forever.</>
+            ) : (
+              <>One payment of ${getActivePrice()}. Yours forever.</>
+            )}
           </p>
         </div>
       </section>
