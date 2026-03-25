@@ -219,12 +219,17 @@ const Index = () => {
             Full Course Access
           </h2>
           <div className="flex items-baseline justify-center gap-3 mb-2">
-            <span className="text-4xl md:text-5xl font-display font-bold text-foreground">$149</span>
-            <span className="text-xl text-muted-foreground line-through">$199</span>
+            <span className="text-4xl md:text-5xl font-display font-bold text-foreground">${getActivePrice()}</span>
+            {getStrikethroughPrice() && (
+              <span className="text-xl text-muted-foreground line-through">${getStrikethroughPrice()}</span>
+            )}
           </div>
-          <p className="text-sm text-destructive font-medium mb-6">
-            Price goes to $199 on April 1. No exceptions.
-          </p>
+          {isEarlyBird() && (
+            <p className="text-sm text-destructive font-medium mb-6">
+              Price goes to $199 on April 1. No exceptions.
+            </p>
+          )}
+          {!isEarlyBird() && <div className="mb-6" />}
           <ul className="text-left max-w-sm mx-auto space-y-3 mb-8">
             {[
               `${totalVideos} video lessons — watch at your own pace`,
