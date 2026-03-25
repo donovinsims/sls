@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SUPABASE_DIR="$APP_DIR/supabase"
 FUNCTIONS_DIR="$SUPABASE_DIR/functions"
-PROJECT_REF="${PROJECT_REF:-sqgitwtrsidbfcmuexro}"
+PROJECT_REF="${PROJECT_REF:-lexiwzhuwwrqtdvdewjk}"
 RUN_AUTH_CONFIG="${RUN_AUTH_CONFIG:-0}"
 AUTH_CONFIG_SCRIPT="$SCRIPT_DIR/configure_supabase_auth.sh"
 
