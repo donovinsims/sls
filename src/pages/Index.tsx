@@ -320,7 +320,7 @@ const Index = () => {
               Is this a subscription? Are there hidden costs?
             </AccordionTrigger>
             <AccordionContent className="text-muted-foreground leading-relaxed">
-              No. It's one payment of $149 (or $199 after April 1). You get lifetime access to everything. No monthly fees. No "premium tier" upsell. No locked modules. Everything is included from day one.
+              No. It's one payment of ${getActivePrice()}. You get lifetime access to everything. No monthly fees. No "premium tier" upsell. No locked modules. Everything is included from day one.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="crypto">
