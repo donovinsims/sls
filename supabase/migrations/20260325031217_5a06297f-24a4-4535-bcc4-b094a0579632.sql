@@ -1,0 +1,1 @@
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS confirmation_email_sent_at timestamptz; ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS admin_notified_at timestamptz; ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS last_email_error text;

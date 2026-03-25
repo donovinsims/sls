@@ -8,7 +8,7 @@ interface SEOHeadProps {
   noindex?: boolean;
 }
 
-const SITE_URL = "https://id-preview--73ba5023-6123-45a4-bf22-4e15fce90d6e.lovable.app";
+const SITE_URL = "https://slscourse.lovable.app";
 const DEFAULT_OG_IMAGE = "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/5c460bab-a8da-481c-b394-266d3dd8a605";
 
 /**

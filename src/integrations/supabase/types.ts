@@ -59,11 +59,14 @@ export type Database = {
       customers: {
         Row: {
           access_expires_at: string | null
+          admin_notified_at: string | null
           amount_paid: number | null
+          confirmation_email_sent_at: string | null
           course_access: boolean
           email: string
           fulfillment_status: string
           id: string
+          last_email_error: string | null
           plan_type: string | null
           purchased_at: string | null
           stripe_customer_id: string | null
@@ -71,11 +74,14 @@ export type Database = {
         }
         Insert: {
           access_expires_at?: string | null
+          admin_notified_at?: string | null
           amount_paid?: number | null
+          confirmation_email_sent_at?: string | null
           course_access?: boolean
           email: string
           fulfillment_status?: string
           id?: string
+          last_email_error?: string | null
           plan_type?: string | null
           purchased_at?: string | null
           stripe_customer_id?: string | null
@@ -83,11 +89,14 @@ export type Database = {
         }
         Update: {
           access_expires_at?: string | null
+          admin_notified_at?: string | null
           amount_paid?: number | null
+          confirmation_email_sent_at?: string | null
           course_access?: boolean
           email?: string
           fulfillment_status?: string
           id?: string
+          last_email_error?: string | null
           plan_type?: string | null
           purchased_at?: string | null
           stripe_customer_id?: string | null
