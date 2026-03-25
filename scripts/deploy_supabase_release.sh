@@ -127,12 +127,12 @@ main() {
   log "Deploying verify-purchase as a public checkout-verification endpoint"
   supabase functions deploy verify-purchase --project-ref "$PROJECT_REF" --workdir "$APP_DIR" --no-verify-jwt --yes
 
-  log "Deploying grant-access"
-  supabase functions deploy grant-access --project-ref "$PROJECT_REF" --workdir "$APP_DIR" --yes
+  log "Deploying grant-access with in-function admin auth validation"
+  supabase functions deploy grant-access --project-ref "$PROJECT_REF" --workdir "$APP_DIR" --no-verify-jwt --yes
 
   if [[ -f "$FUNCTIONS_DIR/get-video/index.ts" ]]; then
-    log "Deploying get-video"
-    supabase functions deploy get-video --project-ref "$PROJECT_REF" --workdir "$APP_DIR" --yes
+    log "Deploying get-video as an authenticated endpoint with in-function JWT validation"
+    supabase functions deploy get-video --project-ref "$PROJECT_REF" --workdir "$APP_DIR" --no-verify-jwt --yes
   else
     log "Skipping get-video because it is not present locally"
   fi

@@ -7,9 +7,6 @@ const corsHeaders = {
 };
 
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
-const SUPABASE_PUBLISHABLE_KEY =
-  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-  "sb_publishable_iCEc7SfJu9uWX6p9n6Gmbg_cuQ2V-BI";
 
 const logTelemetryFailure = (step: string, error: unknown) => {
   console.error(`get-video telemetry failed during ${step}:`, error);
@@ -21,8 +18,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const requestBody = await req.json();
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    const accessToken =
+      typeof requestBody?.accessToken === "string" && requestBody.accessToken.trim().length > 0
+        ? requestBody.accessToken.trim()
+        : null;
+    const bearerToken = accessToken ?? authHeader?.replace(/^Bearer\s+/i, "").trim() ?? null;
+
+    if (!bearerToken) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -33,8 +37,8 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
-        Authorization: authHeader,
-        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${bearerToken}`,
+        apikey: supabaseServiceKey,
       },
     });
     const authPayload = authResponse.ok ? await authResponse.json() : null;
@@ -46,7 +50,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { videoId, fingerprint } = await req.json();
+    const { videoId, fingerprint } = requestBody;
     if (!videoId) {
       return new Response(JSON.stringify({ error: "Missing videoId" }), {
         status: 400,

@@ -8,6 +8,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 const ADMIN_EMAILS = ["sls25trading@gmail.com", "emaildonovin@gmail.com"];
 const SUPPORT_EMAIL = "sls25trading@gmail.com";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 type VideoProgressRow = Database["public"]["Tables"]["video_progress"]["Row"];
 type GetVideoResponse = {
@@ -50,7 +52,7 @@ const getWatchErrorMessage = (payload: GetVideoResponse | null, status?: number)
 
 const Watch = () => {
   const { videoId } = useParams<{ videoId: string }>();
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const navigate = useNavigate();
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
@@ -111,14 +113,29 @@ const Watch = () => {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const fingerprint = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-        const { data, error: fnError, response } = await supabase.functions.invoke<GetVideoResponse>("get-video", {
-          body: { videoId, fingerprint },
-        });
-        const payload = data ?? await parseFunctionPayload(response);
+        if (!session?.access_token) {
+          setError("Your session expired. Please sign in again.");
+          setLoadingVideo(false);
+          return;
+        }
 
-        if (fnError || !payload?.embedUrl) {
-          setError(getWatchErrorMessage(payload, response?.status));
-          console.error(fnError || payload);
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/get-video`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            videoId,
+            fingerprint,
+            accessToken: session.access_token,
+          }),
+        });
+        const payload = await parseFunctionPayload(response);
+
+        if (!response.ok || !payload?.embedUrl) {
+          setError(getWatchErrorMessage(payload, response.status));
+          console.error(payload ?? { status: response.status });
           setLoadingVideo(false);
           return;
         }
@@ -159,7 +176,7 @@ const Watch = () => {
     };
 
     loadVideo();
-  }, [user, videoId]);
+  }, [session, user, videoId]);
 
   // Also check progress once customerId resolves (it may resolve after loadVideo in admin case)
   useEffect(() => {
